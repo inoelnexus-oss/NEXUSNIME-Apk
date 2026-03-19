@@ -1,0 +1,40 @@
+{
+  "entities": {
+    "users": {
+      "title": "User",
+      "description": "User profile and preferences",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "description": "User email" },
+        "displayName": { "type": "string", "description": "User display name" },
+        "photoURL": { "type": "string", "description": "User photo URL" },
+        "lastNode": { "type": "string", "description": "Last visited node ID" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Account creation timestamp" }
+      },
+      "required": ["uid", "email"]
+    },
+    "history": {
+      "title": "History",
+      "description": "User navigation history",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "User UID" },
+        "nodeId": { "type": "string", "description": "Node ID (S1, S2, S3)" },
+        "url": { "type": "string", "description": "Visited URL" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Visit timestamp" }
+      },
+      "required": ["uid", "nodeId", "url", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "users",
+      "description": "User profile data"
+    },
+    "/history/{historyId}": {
+      "schema": "history",
+      "description": "User navigation history logs"
+    }
+  }
+}
