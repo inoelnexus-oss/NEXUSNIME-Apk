@@ -1,9 +1,12 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, onSnapshot, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, onSnapshot, serverTimestamp, Timestamp, orderBy, limit, updateDoc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
 import firebaseConfig from '@/firebase-applet-config.json';
 
 // Initialize Firebase
+if (!firebaseConfig.apiKey) {
+  console.error("Firebase API Key is missing in firebase-applet-config.json");
+}
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
@@ -11,7 +14,12 @@ export const googleProvider = new GoogleAuthProvider();
 
 // Auth helpers
 export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
+export const loginAnonymously = () => signInAnonymously(auth);
 export const logout = () => signOut(auth);
+export { onAuthStateChanged };
+export { doc, setDoc, getDoc, collection, addDoc, query, where, onSnapshot, serverTimestamp, Timestamp, orderBy, limit, updateDoc, deleteDoc, writeBatch, getDocs };
+import { User } from 'firebase/auth';
+export type { User };
 
 // Firestore helpers
 export enum OperationType {
@@ -82,11 +90,11 @@ export const saveUserProfile = async (user: any) => {
 };
 
 // History helpers
-export const logHistory = async (uid: string, nodeId: string, url: string) => {
+export const logHistory = async (uid: string, serverId: string, url: string) => {
   try {
     await addDoc(collection(db, 'history'), {
       uid,
-      nodeId,
+      serverId,
       url,
       timestamp: serverTimestamp()
     });

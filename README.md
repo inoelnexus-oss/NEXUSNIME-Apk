@@ -1,20 +1,35 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# NEXUSNIME_OS
 
-# Run and deploy your AI Studio app
+Multi-Node Anime Streamer with a Hacker/Dark-Tech aesthetic. Includes a Gamer Browser and a powerful AI Assistant.
 
-This contains everything you need to run your app locally.
+## 🚀 Deployment
 
-View your app in AI Studio: https://ai.studio/apps/cc2c9d92-5d12-4603-a1fa-b2869a0c7c08
+### Netlify
+1. Connect your GitHub repository to Netlify.
+2. Build Settings:
+   - Build Command: `npm run build`
+   - Publish Directory: `dist`
+3. Environment Variables:
+   - `GEMINI_API_KEY`: Your Google Gemini API Key.
+   - `GOOGLE_MAPS_PLATFORM_KEY`: Your Google Maps API Key.
+   - All Firebase environment variables from `firebase-applet-config.json`.
 
-## Run Locally
+### APK Conversion
+This project is a Progressive Web App (PWA). To convert it to an APK:
+1. Use [PWA2APK](https://www.pwa2apk.com/) or [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap).
+2. Point to your deployed URL (e.g., Netlify URL).
+3. Download the generated APK.
 
-**Prerequisites:**  Node.js
+## 🛠 Features
+- **AI Monitoring**: Uses Gemini to detect new episodes and content updates.
+- **Multi-Server**: Search across TioAnime, JKAnime, and MonosChinos.
+- **Gamer Browser**: Integrated browser for safe navigation.
+- **Favorites & History**: Cloud-synced favorites with automatic episode tracking.
+- **Nexus Assistant**: AI-powered character that helps you find content.
 
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 📦 Tech Stack
+- React + Vite
+- Tailwind CSS
+- Firebase (Auth & Firestore)
+- Google Gemini AI
+- Express (Backend Proxy)

@@ -12,16 +12,42 @@ service cloud.firestore {
     //   - email: string (required) - User email
     //   - displayName: string (optional) - User display name
     //   - photoURL: string (optional) - User photo URL
-    //   - lastNode: string (optional) - Last visited node ID
+    //   - lastServer: string (optional) - Last visited server ID
     //   - createdAt: timestamp (optional) - Account creation timestamp
     //
     // Collection: history
     // Document ID: historyId (Auto-generated)
     // Fields:
     //   - uid: string (required) - User UID
-    //   - nodeId: string (required) - Node ID (S1, S2, S3)
+    //   - serverId: string (required) - Server ID (S1, S2, S3)
     //   - url: string (required) - Visited URL
     //   - timestamp: timestamp (required) - Visit timestamp
+    //
+    // Collection: ai_chats
+    // Document ID: chatId (Auto-generated)
+    // Fields:
+    //   - userId: string (required) - User UID
+    //   - prompt: string (required) - User prompt
+    //   - response: string (required) - AI response
+    //   - timestamp: timestamp (required) - Chat timestamp
+    //
+    // Collection: media_library
+    // Document ID: mediaId (Auto-generated)
+    // Fields:
+    //   - userId: string (required) - User UID
+    //   - url: string (required) - Media URL
+    //   - name: string (required) - Media name
+    //   - type: string (required) - Media type (video/audio)
+    //   - timestamp: timestamp (required) - Saved timestamp
+    //
+    // Collection: favorites
+    // Document ID: favoriteId (Auto-generated)
+    // Fields:
+    //   - userId: string (required) - User UID
+    //   - animeName: string (required) - Anime name
+    //   - serverId: string (required) - Server ID
+    //   - lastEpisode: string (optional) - Last known episode
+    //   - timestamp: timestamp (required) - Added timestamp
     //
     // ===============================================================
 
@@ -49,12 +75,40 @@ service cloud.firestore {
     }
 
     function isValidHistory(data) {
-      return data.keys().hasAll(['uid', 'nodeId', 'url', 'timestamp']) &&
+      return data.keys().hasAll(['uid', 'serverId', 'url', 'timestamp']) &&
              data.uid is string &&
-             data.nodeId is string &&
+             data.serverId is string &&
              data.url is string &&
              data.url.size() < 2048 &&
              data.timestamp is timestamp;
+    }
+
+    function isValidAiChat(data) {
+      return data.keys().hasAll(['userId', 'prompt', 'response', 'timestamp']) &&
+             data.userId is string &&
+             data.prompt is string &&
+             data.response is string &&
+             data.timestamp is timestamp;
+    }
+
+    function isValidMedia(data) {
+      return data.keys().hasAll(['userId', 'url', 'name', 'type', 'timestamp']) &&
+             data.userId is string &&
+             data.url is string &&
+             data.name is string &&
+             data.type is string &&
+             data.type in ['video', 'audio'] &&
+             data.timestamp is timestamp;
+    }
+
+    function isValidFavorite(data) {
+      return data.keys().hasAll(['userId', 'animeName', 'serverId', 'timestamp']) &&
+             data.userId is string &&
+             data.animeName is string &&
+             data.serverId is string &&
+             data.timestamp is timestamp &&
+             (!('lastEpisode' in data) || data.lastEpisode is string) &&
+             (!('lastChecked' in data) || data.lastChecked is timestamp);
     }
 
     // ===============================================================
@@ -73,6 +127,29 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid &&
                       isValidHistory(request.resource.data);
       allow delete: if isAuthenticated() && resource.data.uid == request.auth.uid;
+    }
+
+    match /ai_chats/{chatId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
+                      isValidAiChat(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /media_library/{mediaId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
+                      isValidMedia(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /favorites/{favoriteId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid &&
+                      isValidFavorite(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid &&
+                      isValidFavorite(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
   }
 }

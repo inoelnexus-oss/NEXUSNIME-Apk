@@ -3,11 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
+    <link rel="icon" type="image/svg+xml" href="https://storage.googleapis.com/mcp-prod-models-image-uploads/199412462158/2026-03-20/nexus_loading_icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#8b0000" />
+    <title>NEXUSNIME_OS</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(err => {
+            console.warn('SW registration failed: ', err);
+          });
+        });
+      }
+    </script>
   </body>
 </html>
 

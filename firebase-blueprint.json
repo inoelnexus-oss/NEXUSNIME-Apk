@@ -9,7 +9,7 @@
         "email": { "type": "string", "description": "User email" },
         "displayName": { "type": "string", "description": "User display name" },
         "photoURL": { "type": "string", "description": "User photo URL" },
-        "lastNode": { "type": "string", "description": "Last visited node ID" },
+        "lastServer": { "type": "string", "description": "Last visited server ID" },
         "createdAt": { "type": "string", "format": "date-time", "description": "Account creation timestamp" }
       },
       "required": ["uid", "email"]
@@ -20,11 +20,49 @@
       "type": "object",
       "properties": {
         "uid": { "type": "string", "description": "User UID" },
-        "nodeId": { "type": "string", "description": "Node ID (S1, S2, S3)" },
+        "serverId": { "type": "string", "description": "Server ID (S1, S2, S3)" },
         "url": { "type": "string", "description": "Visited URL" },
         "timestamp": { "type": "string", "format": "date-time", "description": "Visit timestamp" }
       },
-      "required": ["uid", "nodeId", "url", "timestamp"]
+      "required": ["uid", "serverId", "url", "timestamp"]
+    },
+    "ai_chats": {
+      "title": "AI Chat",
+      "description": "User AI assistant chat history",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "User UID" },
+        "prompt": { "type": "string", "description": "User prompt" },
+        "response": { "type": "string", "description": "AI response" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Chat timestamp" }
+      },
+      "required": ["userId", "prompt", "response", "timestamp"]
+    },
+    "media_library": {
+      "title": "Media Library",
+      "description": "User saved media links (video/audio)",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "User UID" },
+        "url": { "type": "string", "description": "Media URL" },
+        "name": { "type": "string", "description": "Media name" },
+        "type": { "type": "string", "enum": ["video", "audio"], "description": "Media type" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Saved timestamp" }
+      },
+      "required": ["userId", "url", "name", "type", "timestamp"]
+    },
+    "favorites": {
+      "title": "Favorites",
+      "description": "User favorite animes for notifications",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "User UID" },
+        "animeName": { "type": "string", "description": "Anime name" },
+        "serverId": { "type": "string", "description": "Server ID (SERVER_01, etc)" },
+        "lastEpisode": { "type": "string", "description": "Last known episode title/number" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Added timestamp" }
+      },
+      "required": ["userId", "animeName", "serverId", "timestamp"]
     }
   },
   "firestore": {
@@ -35,6 +73,18 @@
     "/history/{historyId}": {
       "schema": "history",
       "description": "User navigation history logs"
+    },
+    "/ai_chats/{chatId}": {
+      "schema": "ai_chats",
+      "description": "User AI assistant chat history logs"
+    },
+    "/media_library/{mediaId}": {
+      "schema": "media_library",
+      "description": "User saved media library"
+    },
+    "/favorites/{favoriteId}": {
+      "schema": "favorites",
+      "description": "User favorite animes for notifications"
     }
   }
 }
