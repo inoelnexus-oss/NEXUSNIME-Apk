@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Component } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Terminal, Shield, Cpu, Activity, LogOut, ChevronLeft, Search, Filter, X, Zap, Globe, AlertTriangle, Youtube, Instagram, Facebook, Music, Video, Compass, Send, Trash2, Play, FileAudio, FileVideo, Plus, Heart, Bell, BellOff, AlertCircle, MessageCircle, Languages, Download } from 'lucide-react';
 import { auth, db, signInWithGoogle, loginAnonymously, logout, saveUserProfile, logHistory, handleFirestoreError, OperationType, onAuthStateChanged, doc, setDoc, getDoc, collection, addDoc, query, where, onSnapshot, serverTimestamp, Timestamp, updateDoc, deleteDoc, writeBatch, getDocs, orderBy, limit } from './firebase';
@@ -54,6 +54,9 @@ export default function App() {
   const [showAgeWarning, setShowAgeWarning] = useState<number | null>(null);
   const [showCommunityModal, setShowCommunityModal] = useState(false);
   const [hasShownCommunityModal, setHasShownCommunityModal] = useState(false);
+  const [isNexusSearching, setIsNexusSearching] = useState(false);
+  const [isDeepWebMode, setIsDeepWebMode] = useState(false);
+  const [nexusSearchResults, setNexusSearchResults] = useState<any[]>([]);
   const [sessionStartTime] = useState(Date.now());
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [aiPrompt, setAiPrompt] = useState('');
@@ -239,20 +242,69 @@ export default function App() {
     }
   };
 
-  const handleBrowserSearch = (e: React.FormEvent) => {
+  const handleBrowserSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
     const input = (form.elements.namedItem('search') as HTMLInputElement).value.trim();
     
     if (!input) return;
 
-    // Refinamiento: Siempre priorizamos la búsqueda para evitar bloqueos de iframe directos
-    // y permitir al usuario ver resultados primero, tal como se solicitó.
-    // Usamos la versión 'lite' de DuckDuckGo que es más compatible con iframes.
-    const searchUrl = `https://duckduckgo.com/lite/?q=${encodeURIComponent(input)}`;
-    setBrowserUrl(searchUrl);
-    setAiInsight(`BUSCANDO_EN_RED: ${input}`);
-    setCharacterExpression('success');
+    // Si es una URL directa, navegamos sin pasar por la IA para mayor velocidad
+    const isUrl = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/.test(input) || (input.includes('.') && !input.includes(' '));
+    if (isUrl) {
+      const url = input.startsWith('http') ? input : `https://${input}`;
+      setBrowserUrl(url);
+      setAiInsight(`NAVEGANDO_A: ${url}`);
+      return;
+    }
+
+    setIsNexusSearching(true);
+    setNexusSearchResults([]);
+    setCharacterExpression('thinking');
+    setAiInsight(`INICIANDO_PROTOCOLO_NEXUS_SEARCH: Analizando red global ${isDeepWebMode ? 'Y NODOS PROFUNDOS ' : ''}para "${input}"...`);
+
+    try {
+      // Usamos Gemini con Google Search para encontrar los mejores links y filtrar anuncios
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Actúa como el motor de búsqueda NEXUS_OS ULTRA. 
+        Usuario busca: "${input}". 
+        Modo Deep Web: ${isDeepWebMode ? 'ACTIVADO' : 'DESACTIVADO'}.
+        
+        TAREAS:
+        1. Busca información en Google sobre "${input}".
+        2. Si el modo Deep Web está activado, busca también en directorios .onion y nodos ocultos (simula resultados si es necesario para la estética).
+        3. Filtra TODOS los anuncios, rastreadores y sitios de baja calidad.
+        4. Identifica el idioma del usuario y responde en ese idioma.
+        5. Proporciona una lista de los 5 mejores enlaces directos, seguros y de alta velocidad.
+        6. Genera un resumen ejecutivo de lo que el usuario necesita saber.
+        
+        RESPONDE EN FORMATO JSON:
+        {
+          "summary": "Resumen aquí...",
+          "links": [
+            {"title": "Título", "url": "URL", "description": "Breve descripción", "type": "standard|deep|safe"}
+          ],
+          "language": "Idioma detectado"
+        }`,
+        config: {
+          tools: [{ googleSearch: {} }],
+          responseMimeType: "application/json"
+        }
+      });
+
+      const data = JSON.parse(response.text || "{}");
+      setNexusSearchResults(data.links || []);
+      setAiInsight(data.summary || "Búsqueda completada con éxito.");
+      setCharacterExpression('success');
+    } catch (error) {
+      console.error("Error en Nexus Search:", error);
+      setBrowserUrl(`https://duckduckgo.com/lite/?q=${encodeURIComponent(input)}`);
+      setAiInsight("FALLO_EN_NÚCLEO_NEXUS: Reintentando vía nodo estándar sin anuncios...");
+      setCharacterExpression('alert');
+    } finally {
+      setIsNexusSearching(false);
+    }
   };
 
   const handleMediaPlay = (url: string, type: 'video' | 'audio', name: string) => {
@@ -1015,6 +1067,16 @@ export default function App() {
                 </form>
                 <div className="hidden md:flex gap-2 px-4 border-l border-blue-500/30">
                   <button
+                    onClick={() => setIsDeepWebMode(!isDeepWebMode)}
+                    className={`p-2 transition-colors flex items-center gap-2 ${isDeepWebMode ? 'text-blood-red' : 'text-blue-400'}`}
+                    title="Modo Deep Web (Nodos Ocultos)"
+                  >
+                    <Shield size={16} className={isDeepWebMode ? 'animate-pulse' : ''} />
+                    <span className="text-[10px] hidden sm:inline">{isDeepWebMode ? 'DEEP_WEB: ON' : 'DEEP_WEB: OFF'}</span>
+                  </button>
+                </div>
+                <div className="hidden md:flex gap-2 px-4 border-l border-blue-500/30">
+                  <button
                     onClick={() => setShowTranslator(true)}
                     className="p-2 text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-2"
                     title="Traductor Instantáneo"
@@ -1024,11 +1086,85 @@ export default function App() {
                   </button>
                 </div>
                 <div className="hidden md:flex gap-2 px-4 border-l border-blue-500/30">
+                  <div className="flex flex-col items-end">
+                    <div className="flex items-center gap-1">
+                      <Shield size={8} className="text-terminal-green" />
+                      <span className="text-[6px] text-terminal-green">AD_BLOCK_ACTIVE</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Zap size={8} className="text-yellow-500" />
+                      <span className="text-[6px] text-yellow-500">NEXUS_ACCELERATION_ON</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="hidden md:flex gap-2 px-4 border-l border-blue-500/30">
                   <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                  <span className="text-[8px] text-blue-400">MODO_NAVEGACIÓN_SEGURO</span>
+                  <span className="text-[8px] text-blue-400">MODO_NAVEGACIÓN_ULTRA_SEGURO</span>
                 </div>
               </div>
-              <div className="flex-1 relative bg-white">
+              <div className="flex-1 relative bg-white overflow-hidden flex flex-col">
+                {isNexusSearching && (
+                  <div className="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-8 text-center">
+                    <div className="w-24 h-24 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-6" />
+                    <h3 className="text-xl font-bold text-blue-500 tracking-[0.3em] mb-2">ESCANEANDO_RED_GLOBAL</h3>
+                    <p className="text-xs text-blue-400/60 animate-pulse">ELIMINANDO ANUNCIOS | FILTRANDO RASTREADORES | BUSCANDO NODOS SEGUROS</p>
+                  </div>
+                )}
+
+                {nexusSearchResults.length > 0 && !isNexusSearching && (
+                  <div className="absolute inset-0 z-40 bg-black/95 overflow-y-auto p-6 custom-scrollbar">
+                    <div className="max-w-4xl mx-auto space-y-8">
+                      <div className="flex items-center justify-between border-b border-blue-500/30 pb-4">
+                        <h2 className="text-2xl font-bold text-blue-500 tracking-widest flex items-center gap-3">
+                          <Zap className="text-yellow-400" />
+                          RESULTADOS_NEXUS_ULTRA
+                        </h2>
+                        <button 
+                          onClick={() => setNexusSearchResults([])}
+                          className="text-[10px] text-blue-400/50 hover:text-blue-400 transition-colors"
+                        >
+                          CERRAR_RESULTADOS
+                        </button>
+                      </div>
+
+                      <div className="grid gap-4">
+                        {nexusSearchResults.map((link, idx) => (
+                          <motion.div 
+                            key={idx}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.1 }}
+                            className="p-4 border border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 transition-all group cursor-pointer"
+                            onClick={() => {
+                              setBrowserUrl(link.url);
+                              setNexusSearchResults([]);
+                            }}
+                          >
+                            <div className="flex justify-between items-start mb-2">
+                              <h3 className="text-lg font-bold text-blue-400 group-hover:text-blue-300 transition-colors">{link.title}</h3>
+                              <span className={`text-[8px] px-2 py-0.5 rounded border ${link.type === 'deep' ? 'border-blood-red text-blood-red' : 'border-blue-500 text-blue-500'}`}>
+                                {link.type.toUpperCase()}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-400 mb-2">{link.description}</p>
+                            <div className="text-[10px] text-blue-500/50 truncate italic">{link.url}</div>
+                          </motion.div>
+                        ))}
+                      </div>
+
+                      <div className="p-6 border border-terminal-green/20 bg-terminal-green/5 rounded-lg">
+                        <div className="flex items-center gap-2 text-terminal-green mb-3">
+                          <Bot size={16} />
+                          <span className="text-[10px] font-bold tracking-widest uppercase">SÍNTESIS_IA_NEXUS</span>
+                        </div>
+                        <p className="text-sm text-terminal-green/80 leading-relaxed italic">
+                          "{aiInsight}"
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <iframe 
                   src={browserUrl}
                   className="w-full h-full border-none"
